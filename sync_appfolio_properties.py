@@ -27,29 +27,22 @@ def fetch_appfolio_properties() -> List[Dict]:
     """Fetch all active properties from AppFolio"""
     log("Fetching properties from AppFolio...")
     
-    url = f"https://{APPFOLIO_CLIENT_ID}:{APPFOLIO_CLIENT_SECRET}@keyrenter072.appfolio.com/api/v2/reports/property_directory"
+    url = f"https://{APPFOLIO_CLIENT_ID}:{APPFOLIO_CLIENT_SECRET}@keyrenter072.appfolio.com/api/v2/reports/property_directory.json"
     
     headers = {
         "Content-Type": "application/json"
     }
     
     payload = {
-        "columns": [
-            {"name": "property_id"},
-            {"name": "property_name"},
-            {"name": "property_address"}
-        ],
-        "filter": {
-            "property_active": ["Yes"]
-        }
+        "property_visibility": "active"
     }
     
     try:
-        response = requests.post(url, json=payload, headers=headers)
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
         response.raise_for_status()
         data = response.json()
         
-        properties = data.get("data", [])
+        properties = data.get("results", [])
         log(f"Fetched {len(properties)} active properties from AppFolio")
         return properties
         
