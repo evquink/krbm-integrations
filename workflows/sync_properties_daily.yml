@@ -1,0 +1,53 @@
+name: Sync AppFolio Properties
+
+on:
+  schedule:
+    # Run daily at 2:00 AM EST (7:00 AM UTC)
+    - cron: '0 7 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  sync-properties:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+      
+      - name: Run property sync
+        env:
+          APPFOLIO_CLIENT_ID: ${{ secrets.APPFOLIO_CLIENT_ID }}
+          APPFOLIO_CLIENT_SECRET: ${{ secrets.APPFOLIO_CLIENT_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python sync_appfolio_properties.py
+      
+      - name: Send failure notification
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: '❌ AppFolio Property Sync Failed'
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: KRBM Integrations <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            The AppFolio property sync workflow failed.
+            
+            Workflow: ${{ github.workflow }}
+            Repository: ${{ github.repository }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            Please check the logs for details.
